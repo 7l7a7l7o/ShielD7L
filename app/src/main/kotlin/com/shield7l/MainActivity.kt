@@ -1,4 +1,5 @@
 package com.shield7l
+
 import android.content.Intent
 import android.os.Bundle
 import android.widget.*
@@ -11,10 +12,10 @@ class MainActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        val lay = LinearLayout(this)
-        lay.orientation = LinearLayout.VERTICAL
-        lay.setBackgroundColor(0xFF000000.toInt())
-        lay.setPadding(48, 96, 48, 48)
+        val layout = LinearLayout(this)
+        layout.orientation = LinearLayout.VERTICAL
+        layout.setBackgroundColor(0xFF000000.toInt())
+        layout.setPadding(48, 96, 48, 48)
 
         val title = TextView(this)
         title.setTextColor(0xFFFFFFFF.toInt())
@@ -26,41 +27,50 @@ SISTEMA DE SEGURIDAD
 Titular: J.E.Y.M.7
 Versión: 1.1
         """.trimIndent()
-        lay.addView(title)
+        layout.addView(title)
 
         status = TextView(this)
         status.setTextColor(0xFFCCCCCC.toInt())
         status.textSize = 18f
         status.setPadding(0, 32, 0, 32)
-        lay.addView(status)
+        layout.addView(status)
 
         btn = Button(this)
-        btn.setOnClickListener { toggle() }
-        lay.addView(btn)
+        btn.setOnClickListener { toggleService() }
+        layout.addView(btn)
 
-        setContentView(lay)
+        setContentView(layout)
         updateUI()
     }
 
-    private fun toggle() {
-        val i = Intent(this, SecurityMonitorService::class.java)
-        if (SecurityMonitorService.isRunning) stopService(i)
-        else if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) startForegroundService(i)
-        else startService(i)
+    private fun toggleService() {
+        val intent = Intent(this, SecurityMonitorService::class.java)
+        if (SecurityMonitorService.isRunning) {
+            stopService(intent)
+        } else {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                startForegroundService(intent)
+            } else {
+                startService(intent)
+            }
+        }
         updateUI()
     }
 
     private fun updateUI() {
         if (SecurityMonitorService.isRunning) {
-            status.text = "✅ PROTECCIÓN ACTIVA\nEscaneo de conexiones cada 3s"
+            status.text = "✅ PROTECCIÓN ACTIVA\nEscaneo cada 3 segundos"
             btn.text = "DETENER PROTECCIÓN"
             btn.setBackgroundColor(0xFFFF4444.toInt())
         } else {
-            status.text = "⏸️ DETENIDO\nToca para activar el monitoreo"
+            status.text = "⏸️ DETENIDO\nToca para activar"
             btn.text = "ACTIVAR PROTECCIÓN 🛡️"
             btn.setBackgroundColor(0xFF44AA44.toInt())
         }
     }
 
-    override fun onResume() { super.onResume(); updateUI() }
+    override fun onResume() {
+        super.onResume()
+        updateUI()
+    }
 }
