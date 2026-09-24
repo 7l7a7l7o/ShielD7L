@@ -2,29 +2,26 @@ name: Build ShielD7L
 on:
   push:
     branches: [ main ]
-  pull_request:
-    branches: [ main ]
-
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout code
+      - name: Clonar código
         uses: actions/checkout@v4
 
-      - name: Set up JDK 17
+      - name: Configurar Java
         uses: actions/setup-java@v4
         with:
           java-version: '17'
           distribution: 'temurin'
 
-      - name: Grant execute permission
+      - name: Dar permiso a Gradle
         run: chmod +x gradlew
 
-      - name: Build APK
-        run: ./gradlew clean assembleDebug
+      - name: Compilar APK
+        run: ./gradlew clean assembleDebug --no-daemon
 
-      - name: Upload APK
+      - name: Subir APK
         uses: actions/upload-artifact@v4
         with:
           name: ShielD7L-APK
