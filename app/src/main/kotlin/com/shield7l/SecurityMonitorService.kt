@@ -1,7 +1,6 @@
 package com.shield7l
 import android.app.*
 import android.content.Context
-import android.net.*
 import android.os.*
 import kotlinx.coroutines.*
 import java.io.BufferedReader
@@ -13,17 +12,16 @@ class SecurityMonitorService : Service() {
         const val CHANNEL_ID = "ShielD7L"
         var isRunning = false
             private set
-        val BLOCKED = listOf("tiktok","bytedance","pangle","snssdk","douyin")
+        val DOMINIOS_BLOQUEADOS = listOf("tiktok", "bytedance", "pangle", "snssdk", "douyin")
     }
 
-    private val handler = Handler(Looper.getMainLooper())
     private var job: Job? = null
 
     override fun onCreate() {
         super.onCreate()
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            NotificationChannel.Builder(CHANNEL_ID, "ShielD7L Seguridad")
-                .importance(NotificationManager.IMPORTANCE_HIGH).build().let {
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+            NotificationChannel.Builder(CHANNEL_ID, "ShielD7L Seguridad", NotificationManager.IMPORTANCE_HIGH)
+                .build().also {
                     getSystemService(NotificationManager::class.java).createNotificationChannel(it)
                 }
         }
@@ -31,34 +29,33 @@ class SecurityMonitorService : Service() {
 
     override fun onStartCommand(i: Intent?, f: Int, startId: Int): Int {
         startForeground(1001, Notification.Builder(this, CHANNEL_ID)
-            .setContentTitle("ShielD7L 🛡️ ACTIVO")
+            .setContentTitle("SHIELD7L 🛡️ ACTIVO")
             .setContentText("Monitoreando conexiones...")
             .setSmallIcon(android.R.drawable.ic_menu_info_details)
             .setOngoing(true).build())
-        if (!isRunning) startMonitor()
+
+        if (!isRunning) {
+            isRunning = true
+            job = CoroutineScope(Dispatchers.IO).launch {
+                while (isRunning) {
+                    escanearConexiones()
+                    delay(3000)
+                }
+            }
+        }
         return START_STICKY
     }
 
-    private fun startMonitor() {
-        isRunning = true
-        job = CoroutineScope(Dispatchers.IO).launch {
-            while (isRunning) {
-                scanConnections()
-                delay(3000)
-            }
-        }
-    }
-
-    private suspend fun scanConnections() {
+    private suspend fun escanearConexiones() {
         try {
             BufferedReader(FileReader("/proc/net/tcp")).use { reader ->
-                reader.lineSequence().drop(1).forEach { line ->
-                    val p = line.split("\\s+".toRegex())
-                    if (p.size >= 10 && p[3] == "01") {
-                        val ipHex = p[2].split(":")[0]
+                reader.lineSequence().drop(1).forEach { linea ->
+                    val partes = linea.split("\\s+".toRegex())
+                    if (partes.size >= 10 && partes[3] == "01") {
+                        val ipHex = partes[2].split(":")[0]
                         if (ipHex != "00000000" && ipHex != "0100007F") {
-                            val ip = hexToIp(ipHex)
-                            checkIp(ip)
+                            val ip = hexAIp(ipHex)
+                            verificarIP(ip)
                         }
                     }
                 }
@@ -66,35 +63,39 @@ class SecurityMonitorService : Service() {
         } catch (_: Exception) {}
     }
 
-    private fun checkIp(ip: String) {
+    private fun verificarIP(ip: String) {
         try {
             val host = InetAddress.getByName(ip).hostName.lowercase()
-            for (b in BLOCKED) {
-                if (host.contains(b)) {
-                    alert("⚠️ CONEXIÓN SOSPECHOSA", "$ip → $host")
+            for (palabra in DOMINIOS_BLOQUEADOS) {
+                if (host.contains(palabra)) {
+                    notificarAlerta("⚠️ CONEXIÓN SOSPECHOSA", "$ip → $host")
                     return
                 }
             }
         } catch (_: Exception) {}
     }
 
-    private fun hexToIp(h: String): String {
+    private fun hexAIp(h: String): String {
         if (h.length != 8) return h
         return listOf(6..7, 4..5, 2..3, 0..1)
             .joinToString(".") { h.substring(it).toInt(16).toString() }
     }
 
-    private fun alert(title: String, msg: String) {
-        val n = Notification.Builder(this, CHANNEL_ID)
-            .setContentTitle(title).setContentText(msg)
+    private fun notificarAlerta(titulo: String, mensaje: String) {
+        val notif = Notification.Builder(this, CHANNEL_ID)
+            .setContentTitle(titulo)
+            .setContentText(mensaje)
             .setSmallIcon(android.R.drawable.ic_dialog_alert)
-            .setPriority(Notification.PRIORITY_HIGH).setAutoCancel(true).build()
+            .setPriority(Notification.PRIORITY_HIGH)
+            .setAutoCancel(true).build()
         getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-            .notify(System.currentTimeMillis().toInt(), n)
+            .notify(System.currentTimeMillis().toInt(), notif)
     }
 
     override fun onDestroy() {
-        isRunning = false; job?.cancel(); super.onDestroy()
+        isRunning = false
+        job?.cancel()
+        super.onDestroy()
     }
 
     override fun onBind(i: Intent?): IBinder? = null
