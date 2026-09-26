@@ -2,24 +2,18 @@ plugins {
     id("com.android.application")
     id("kotlin-android")
 }
-
 android {
     namespace = "com.shield7l"
     compileSdk = 34
-    buildToolsVersion = "34.0.0"
-
     defaultConfig {
         applicationId = "com.shield7l"
-        minSdk = 26
+        minSdk = 24
         targetSdk = 34
         versionCode = 1
-        versionName = "1.1"
+        versionName = "1.0"
     }
-
     buildTypes {
-        release {
-            isMinifyEnabled = false
-        }
+        release { minifyEnabled = false }
     }
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
@@ -29,8 +23,7 @@ android {
         jvmTarget = "17"
     }
 }
-
 dependencies {
-    implementation("androidx.core:core-ktx:1.12.0")
-    implementation("androidx.appcompat:appcompat:1.6.1")
+    implementation("androidx.appcompat:appcompat:1.7.0")
+    implementation("com.google.android.material:material:1.12.0")
 }
